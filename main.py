@@ -14,8 +14,8 @@ TICKS_PER_SEC = 60
 SECTOR_SIZE = 16
 
 WALKING_SPEED = 5
-ACCELERATION = 1
-FLYING_SPEED = 15
+ACCELERATION = 0.1
+FLYING_SPEED = 0.0
 WORLD_SIZE=40
 GRAVITY = 20.0
 MAX_JUMP_HEIGHT = 1.0 # About the height of a block.
@@ -27,8 +27,8 @@ MAX_JUMP_HEIGHT = 1.0 # About the height of a block.
 # Use t and the desired MAX_JUMP_HEIGHT to solve for v_0 (jump speed) in
 #    s = s_0 + v_0 * t + (a * t^2) / 2
 JUMP_SPEED = math.sqrt(2 * GRAVITY * MAX_JUMP_HEIGHT)
-TERMINAL_VELOCITY = 50
-
+TERMINAL_VELOCITY = 5
+TERMINAL_VELOCITY_REVERSE = -2
 PLAYER_HEIGHT = 1
 
 def cube_vertices(x, y, z, n):
@@ -436,7 +436,7 @@ class Window(pyglet.window.Window):
 
         # When flying gravity has no effect and speed is increased.
         self.flying = True
-
+        self.FLYING_SPEED = 0.0
         # Strafing is moving lateral to the direction you are facing,
         # e.g. moving to the left or right while continuing to face forward.
         #
@@ -586,9 +586,13 @@ class Window(pyglet.window.Window):
 
         """
         # walking
-        speed = FLYING_SPEED if self.flying else WALKING_SPEED
+        self.FLYING_SPEED-=self.strafe[0] * ACCELERATION
+        if self.FLYING_SPEED>TERMINAL_VELOCITY:self.FLYING_SPEED=TERMINAL_VELOCITY
+        if self.FLYING_SPEED<TERMINAL_VELOCITY_REVERSE:self.FLYING_SPEED=TERMINAL_VELOCITY_REVERSE
+
+        speed = self.FLYING_SPEED
         d = dt * speed # distance covered this tick.
-        dx, dy, dz = self.get_motion_vector()
+        dx, dy, dz = self.get_sight_vector()
         # New position in space, before accounting for gravity.
         dx, dy, dz = dx * d, dy * d, dz * d
         # gravity
