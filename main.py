@@ -149,25 +149,35 @@ class Model(object):
 
         self._initialize()
         
-        rule = {1:[2,3,4,5,6,7,8],
-                0:[5,6,7,8]}
+        self.rule = {1:[2,3,4,5,6,7,8],
+                     0:[5,6,7,8]}
 
     def update_world(self):
         """updates a conway step"""
-        pass
+        n = (WORLD_SIZE/2) -1
+        new_world = {}
+        for x in range(n):
+            for y in range(n):
+                for z in range(b):
+                    if self.judgeCoordinates((x,y,z)):
+                        new_world[x,y,z]=BRICK
+        self.world=new_world
+        self.add_walls()
+ 
+
 
     def judgeCoordinates(self,coordinates):
         """judges a coordinates and returns True or False to see if said
         coordinate survives"""
-        n = (WORLD_SIZE/2) -1
-        for x in range(n):
-            for y in range(n):
-                for z in range(b):
-                    if self.world == BRICK:
-                        
-                    else:pass
+        
+        if self.world == BRICK:
+            if self.count_neighbours(coordinates) in self.rule[1]:return True
+            else:return False
+        else:
+            if self.count_neighbours(coordinates) in self.rule[0]:return True
+            else:return False
 
-        new_world = {}
+
 
     def count_neighbours(self, coordinate):
         """counts the number of cells surrounding a coordinate"""
@@ -176,15 +186,13 @@ class Model(object):
         for a in [-1,0,1]:
             for b in [-1,0,1]:
                 for c in [-1,0,1]:
-                    if (a,b,c) == (0,0,0):continue
-                    if x,y,z in self.world:
+                    X,Y,Z = x+a,y+b,z+c
+                    if (X,Y,Z) == (0,0,0):continue
+                    if (X,Y,Z) in self.world:
                         if self.world[(x,y,z)]==BRICK: n+=1
-        return n
+        
 
-    def _initialize(self):
-        """ Initialize the world by placing all the blocks.
-
-        """
+    def add_walls(self):
         n = WORLD_SIZE/2  # 1/2 width and height of world
         s = 1  # step size
         y = 0  # initial y height
@@ -197,7 +205,14 @@ class Model(object):
                     # create outer walls.
                     for dy in xrange(-n, n):
                         self.add_block((x, y + dy, z), WALL, immediate=False)
-
+    
+    def _initialize(self):
+        """ Initialize the world by placing all the blocks.
+        """
+        n = WORLD_SIZE/2  # 1/2 width and height of world
+        s = 1  # step size
+        y = 0  # initial y height
+        self.add_walls()
         # generate the hills randomly
         o = n - 10
         n-=1
