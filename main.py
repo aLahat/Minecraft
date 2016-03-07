@@ -435,7 +435,7 @@ class Window(pyglet.window.Window):
         self.exclusive = False
 
         # When flying gravity has no effect and speed is increased.
-        self.flying = False
+        self.flying = True
 
         # Strafing is moving lateral to the direction you are facing,
         # e.g. moving to the left or right while continuing to face forward.
@@ -726,8 +726,8 @@ class Window(pyglet.window.Window):
                 self.dy = JUMP_SPEED
         elif symbol == key.ESCAPE:
             self.set_exclusive_mouse(False)
-        elif symbol == key.TAB:
-            self.flying = not self.flying
+        #elif symbol == key.TAB:
+        #    self.flying = not self.flying
         elif symbol in self.num_keys:
             index = (symbol - self.num_keys[0]) % len(self.inventory)
             self.block = self.inventory[index]
