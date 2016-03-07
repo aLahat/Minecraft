@@ -16,7 +16,7 @@ SECTOR_SIZE = 16
 WALKING_SPEED = 5
 ACCELERATION = 1
 FLYING_SPEED = 15
-
+WORLD_SIZE=40
 GRAVITY = 20.0
 MAX_JUMP_HEIGHT = 1.0 # About the height of a block.
 # To derive the formula for calculating jump speed, first solve
@@ -29,7 +29,7 @@ MAX_JUMP_HEIGHT = 1.0 # About the height of a block.
 JUMP_SPEED = math.sqrt(2 * GRAVITY * MAX_JUMP_HEIGHT)
 TERMINAL_VELOCITY = 50
 
-PLAYER_HEIGHT = 2
+PLAYER_HEIGHT = 1
 
 def cube_vertices(x, y, z, n):
     """ Return the vertices of the cube at position x, y, z with size 2*n.
@@ -74,7 +74,7 @@ TEXTURE_PATH = 'texture.png'
 GRASS = tex_coords((1, 0), (0, 1), (0, 0))
 SAND = tex_coords((1, 1), (1, 1), (1, 1))
 BRICK = tex_coords((2, 0), (2, 0), (2, 0))
-STONE = tex_coords((2, 1), (2, 1), (2, 1))
+WALL = tex_coords((2, 1), (2, 1), (2, 1))
 
 FACES = [
     ( 0, 1, 0),
@@ -154,18 +154,18 @@ class Model(object):
         """ Initialize the world by placing all the blocks.
 
         """
-        n = 80  # 1/2 width and height of world
+        n = WORLD_SIZE/2  # 1/2 width and height of world
         s = 1  # step size
         y = 0  # initial y height
         for x in xrange(-n, n + 1, s):
             for z in xrange(-n, n + 1, s):
-                # create a layer stone an grass everywhere.
-                self.add_block((x, y - 2, z), GRASS, immediate=False)
-                self.add_block((x, y - 3, z), STONE, immediate=False)
+                # create a layer WALL an grass everywhere.
+                self.add_block((x, y + n, z), WALL, immediate=False)
+                self.add_block((x, y - n, z), WALL, immediate=False)
                 if x in (-n, n) or z in (-n, n):
                     # create outer walls.
-                    for dy in xrange(-2, 3):
-                        self.add_block((x, y + dy, z), STONE, immediate=False)
+                    for dy in xrange(-n, n):
+                        self.add_block((x, y + dy, z), WALL, immediate=False)
 
         # generate the hills randomly
         o = n - 10
@@ -677,7 +677,7 @@ class Window(pyglet.window.Window):
                     self.model.add_block(previous, self.block)
             elif button == pyglet.window.mouse.LEFT and block:
                 texture = self.model.world[block]
-                if texture != STONE:
+                if texture != WALL:
                     self.model.remove_block(block)
         else:
             self.set_exclusive_mouse(True)
