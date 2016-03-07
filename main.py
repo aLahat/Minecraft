@@ -28,7 +28,7 @@ MAX_JUMP_HEIGHT = 1.0 # About the height of a block.
 #    s = s_0 + v_0 * t + (a * t^2) / 2
 JUMP_SPEED = math.sqrt(2 * GRAVITY * MAX_JUMP_HEIGHT)
 TERMINAL_VELOCITY = 5
-TERMINAL_VELOCITY_REVERSE = -2
+TERMINAL_VELOCITY_REVERSE = -5
 PLAYER_HEIGHT = 1
 
 def cube_vertices(x, y, z, n):
@@ -134,7 +134,6 @@ class Model(object):
         # A mapping from position to the texture of the block at that position.
         # This defines all the blocks that are currently in the world.
         self.world = {}
-
         # Same mapping as `world` but only contains blocks that are shown.
         self.shown = {}
 
@@ -149,6 +148,15 @@ class Model(object):
         self.queue = deque()
 
         self._initialize()
+
+    def update_world(self):
+        """updates a conway step"""
+        pass
+
+    def judgeCoordinates(self,coordinates):
+        """judges a coordinates and returns True or False to see if said
+        coordinate survives"""
+        
 
     def _initialize(self):
         """ Initialize the world by placing all the blocks.
@@ -169,6 +177,18 @@ class Model(object):
 
         # generate the hills randomly
         o = n - 10
+        n-=1
+        print WORLD_SIZE,WORLD_SIZE**2,WORLD_SIZE**2/10
+        done = []
+        for i in range(((n*2)**2)/2):
+            
+            x,y,z = map(lambda x: int(random.gauss(0,n/5)),range(3))
+            #while (x,y,z) in done:
+            #    x,y,z = map(lambda x: random.randint(-n,n),range(3))
+            #done.append((x,y,z))
+            print len(done),(WORLD_SIZE**2)/3
+            self.add_block((x, y, z), BRICK, immediate=False)
+        '''
         for _ in xrange(120):
             a = random.randint(-o, o)  # x position of the hill
             b = random.randint(-o, o)  # z position of the hill
@@ -186,6 +206,7 @@ class Model(object):
                             continue
                         self.add_block((x, y, z), t, immediate=False)
                 s -= d  # decrement side lenth so hills taper off
+                '''
 
     def hit_test(self, position, vector, max_distance=8):
         """ Line of sight search from current position. If a block is
@@ -893,7 +914,11 @@ def main():
     window.set_exclusive_mouse(True)
     setup()
     pyglet.app.run()
-
+    for x,y in window.model.world.iteritems():
+        if y==WALL:print x,'WALL'
+        elif y==BRICK:print x,'BRICK'
+        else: print x,y
+        raw_input()
 
 if __name__ == '__main__':
     main()
