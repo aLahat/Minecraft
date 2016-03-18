@@ -11,12 +11,13 @@ from pyglet.window import key, mouse
 TICKS_PER_SEC = 60
 
 # Size of sectors used to ease block loading.
-SECTOR_SIZE = 16
+SECTOR_SIZE = 10
 
 WALKING_SPEED = 5
 ACCELERATION = 0.1
 FLYING_SPEED = 0.0
-WORLD_SIZE=40
+WORLD_SIZE=25
+TIMER = 5
 GRAVITY = 20.0
 MAX_JUMP_HEIGHT = 1.0 # About the height of a block.
 # To derive the formula for calculating jump speed, first solve
@@ -154,17 +155,25 @@ class Model(object):
 
     def update_world(self):
         """updates a conway step"""
-        n = (WORLD_SIZE/2) -1
+        n = (WORLD_SIZE/2)
+        RANGE = range(-(n-1),n)
         new_world = {}
-        for x in range(n):
-            for y in range(n):
-                for z in range(b):
+        for x in RANGE:
+            for y in RANGE:
+                for z in RANGE:
                     if self.judgeCoordinates((x,y,z)):
-                        new_world[x,y,z]=BRICK
-        self.world=new_world
-        self.add_walls()
- 
+                        new_world[(x,y,z)]=BRICK
 
+        for x in RANGE:
+            for y in RANGE:
+                for z in RANGE:
+                    if (x,y,z) in new_world:
+                        self.add_block((x,y,z),BRICK,immediate=True)
+                    else:
+                        if (x,y,z) in self.world:
+                            self.remove_block((x,y,z))
+        #self.world=new_world
+        #self.add_walls()
 
     def judgeCoordinates(self,coordinates):
         """judges a coordinates and returns True or False to see if said
@@ -177,8 +186,6 @@ class Model(object):
             if self.count_neighbours(coordinates) in self.rule[0]:return True
             else:return False
 
-
-
     def count_neighbours(self, coordinate):
         """counts the number of cells surrounding a coordinate"""
         x,y,z = coordinate
@@ -189,8 +196,9 @@ class Model(object):
                     X,Y,Z = x+a,y+b,z+c
                     if (X,Y,Z) == (0,0,0):continue
                     if (X,Y,Z) in self.world:
-                        if self.world[(x,y,z)]==BRICK: n+=1
-        
+                        if self.world[(X,Y,Z)]==BRICK: n+=1
+
+        return n
 
     def add_walls(self):
         n = WORLD_SIZE/2  # 1/2 width and height of world
@@ -198,7 +206,7 @@ class Model(object):
         y = 0  # initial y height
         for x in xrange(-n, n + 1, s):
             for z in xrange(-n, n + 1, s):
-                # create a layer WALL an grass everywhere.
+                # create a layer WALL everywhere.
                 self.add_block((x, y + n, z), WALL, immediate=False)
                 self.add_block((x, y - n, z), WALL, immediate=False)
                 if x in (-n, n) or z in (-n, n):
@@ -216,15 +224,13 @@ class Model(object):
         # generate the hills randomly
         o = n - 10
         n-=1
-        print WORLD_SIZE,WORLD_SIZE**2,WORLD_SIZE**2/10
         done = []
-        for i in range(((n*2)**2)/2):
+        for i in range(((n*2)**2)/10):
             
             x,y,z = map(lambda x: int(random.gauss(0,n/5)),range(3))
             #while (x,y,z) in done:
             #    x,y,z = map(lambda x: random.randint(-n,n),range(3))
             #done.append((x,y,z))
-            print len(done),(WORLD_SIZE**2)/3
             self.add_block((x, y, z), BRICK, immediate=False)
         '''
         for _ in xrange(120):
@@ -506,7 +512,7 @@ class Window(pyglet.window.Window):
 
         # Current (x, y, z) position in the world, specified with floats. Note
         # that, perhaps unlike in math class, the y-axis is the vertical axis.
-        self.position = (0, 0, 0)
+        self.position = (0, 0, WORLD_SIZE/2-1)
 
         # First element is rotation of the player in the x-z plane (ground
         # plane) measured from the z-axis down. The second is the rotation
@@ -547,6 +553,11 @@ class Window(pyglet.window.Window):
         # This call schedules the `update()` method to be called
         # TICKS_PER_SEC. This is the main game event loop.
         pyglet.clock.schedule_interval(self.update, 1.0 / TICKS_PER_SEC)
+
+        #
+        self.lives=50
+        self.TIMER = TIMER
+        #self.score=0
 
     def set_exclusive_mouse(self, exclusive):
         """ If `exclusive` is True, the game will capture the mouse, if False
@@ -631,6 +642,7 @@ class Window(pyglet.window.Window):
             self.sector = sector
         m = 8
         dt = min(dt, 0.2)
+        self.TIMER+=dt
         for _ in xrange(m):
             self._update(dt / m)
 
@@ -666,6 +678,12 @@ class Window(pyglet.window.Window):
         x, y, z = self.position
         x, y, z = self.collide((x + dx, y + dy, z + dz), PLAYER_HEIGHT)
         self.position = (x, y, z)
+
+
+
+        if self.TIMER>1:
+        	self.TIMER=0
+        	self.model.update_world()
 
     def collide(self, position, height):
         """ Checks to see if the player at the given `position` and `height`
@@ -705,6 +723,8 @@ class Window(pyglet.window.Window):
                     op[i] += face[i]
                     if tuple(op) not in self.model.world:
                         continue
+                    self.lives-=1
+                    self.FLYING_SPEED = -self.FLYING_SPEED/3
                     p[i] -= (d - pad) * face[i]
                     if face == (0, -1, 0) or face == (0, 1, 0):
                         # You are colliding with the ground or ceiling, so stop
@@ -763,6 +783,7 @@ class Window(pyglet.window.Window):
             x, y = x + dx * m, y + dy * m
             y = max(-90, min(90, y))
             self.rotation = (x, y)
+            self.on_mouse_press(x,y,pyglet.window.mouse.LEFT,0)
 
     def on_key_press(self, symbol, modifiers):
         """ Called when the player presses a key. See pyglet docs for key
@@ -789,8 +810,8 @@ class Window(pyglet.window.Window):
                 self.dy = JUMP_SPEED
         elif symbol == key.ESCAPE:
             self.set_exclusive_mouse(False)
-        #elif symbol == key.TAB:
-        #    self.flying = not self.flying
+        elif symbol == key.TAB:
+            self.model.update_world()
         elif symbol in self.num_keys:
             index = (symbol - self.num_keys[0]) % len(self.inventory)
             self.block = self.inventory[index]
@@ -895,9 +916,14 @@ class Window(pyglet.window.Window):
 
         """
         x, y, z = self.position
-        self.label.text = '%02d (%.2f, %.2f, %.2f) %d / %d' % (
-            pyglet.clock.get_fps(), x, y, z,
-            len(self.model._shown), len(self.model.world))
+        if self.lives>0:
+        	self.label.text = '#'*self.lives
+       	else:
+       		self.label.text = 'GAME OVER'
+
+        #self.label.text = '%02d (%.2f, %.2f, %.2f) %d / %d ' % (
+        #    pyglet.clock.get_fps(), x, y, z,
+        #    len(self.model._shown), len(self.model.world))
         self.label.draw()
 
     def draw_reticle(self):
